@@ -59,7 +59,7 @@ pipeline {
         stage('Policy unit tests') {
             steps {
                 // Proves the guardrails themselves work (good input passes, bad input is blocked).
-                sh 'bash./scripts/test-policies.sh'
+                   sh 'bash ./scripts/test-policies.sh'
             }
         }
 
@@ -122,7 +122,7 @@ pipeline {
                         export APP_VERSION="build-${BUILD_NUMBER}"
                         export GIT_SHA="$(git rev-parse --short HEAD)"
                         echo "$VM_IP" > vm_ip.txt
-                        bash./scripts/deploy.sh
+                           bash ./scripts/deploy.sh
                     '''
                 }
             }
