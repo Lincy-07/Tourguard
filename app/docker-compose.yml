@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    container_name: tourguide
+    restart: unless-stopped
+    environment:
+      APP_VERSION: "${APP_VERSION:-dev}"
+      GIT_SHA: "${GIT_SHA:-local}"
+    ports:
+      - "80:5000"

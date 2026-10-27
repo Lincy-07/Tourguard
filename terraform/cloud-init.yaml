@@ -1,0 +1,15 @@
+#cloud-config
+# Runs once on first boot: installs Docker + rsync and prepares the app folder.
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - rsync
+
+runcmd:
+  - curl -fsSL https://get.docker.com | sh
+  - usermod -aG docker azureuser
+  - mkdir -p /opt/tourguide
+  - chown azureuser:azureuser /opt/tourguide
+  - systemctl enable --now docker
+  - touch /opt/tourguide/.cloud-init-done

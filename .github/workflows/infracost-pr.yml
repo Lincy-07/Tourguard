@@ -1,0 +1,43 @@
+# OPTIONAL BONUS (not required by the rubric). Jenkins is the main pipeline.
+# This posts the cost estimate and policy result on every pull request.
+# Needs repo secret INFRACOST_API_KEY.
+name: infracost-pr-check
+
+on:
+  pull_request:
+    paths: ["terraform/**", "environments/**", "policy/**"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  cost-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Install Conftest
+        run: |
+          curl -fsSL https://github.com/open-policy-agent/conftest/releases/download/v0.56.0/conftest_0.56.0_Linux_x86_64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin conftest
+
+      - name: Estimate cost from Terraform code (no Azure login needed)
+        run: |
+          infracost breakdown --path terraform \
+            --terraform-var-file ../environments/dev.tfvars \
+            --terraform-var ssh_public_key=dummy \
+            --format json --out-file infracost.json
+
+      - name: Comment on the pull request
+        run: |
+          infracost comment github --path infracost.json \
+            --repo "$GITHUB_REPOSITORY" --github-token "${{ github.token }}" \
+            --pull-request ${{ github.event.pull_request.number }} --behavior update
+
+      - name: Policy gate
+        run: conftest test --policy policy/cost --data policy/data.json infracost.json

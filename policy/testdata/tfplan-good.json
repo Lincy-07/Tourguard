@@ -1,0 +1,91 @@
+{
+  "resource_changes": [
+    {
+      "address": "azurerm_resource_group.rg",
+      "type": "azurerm_resource_group",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "tags": {
+            "owner": "student",
+            "environment": "dev",
+            "project": "tourguard",
+            "cost_center": "college-lab",
+            "managed_by": "terraform"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.network.azurerm_network_security_group.nsg",
+      "type": "azurerm_network_security_group",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "tags": {
+            "owner": "student",
+            "environment": "dev",
+            "project": "tourguard",
+            "cost_center": "college-lab",
+            "managed_by": "terraform"
+          },
+          "security_rule": [
+            {
+              "name": "allow-ssh",
+              "access": "Allow",
+              "destination_port_range": "22",
+              "source_address_prefix": "*"
+            },
+            {
+              "name": "allow-http",
+              "access": "Allow",
+              "destination_port_range": "80",
+              "source_address_prefix": "*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "module.compute.azurerm_public_ip.pip",
+      "type": "azurerm_public_ip",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "tags": {
+            "owner": "student",
+            "environment": "dev",
+            "project": "tourguard",
+            "cost_center": "college-lab",
+            "managed_by": "terraform"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.compute.azurerm_linux_virtual_machine.vm",
+      "type": "azurerm_linux_virtual_machine",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "after": {
+          "size": "Standard_B1s",
+          "tags": {
+            "owner": "student",
+            "environment": "dev",
+            "project": "tourguard",
+            "cost_center": "college-lab",
+            "managed_by": "terraform"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "budget": {
+    "monthly_usd": 20,
+    "warn_at_fraction": 0.8,
+    "max_resource_monthly_usd": 15,
+    "allowed_vm_sizes": ["Standard_B1s", "Standard_B1ms", "Standard_B2s"],
+    "required_tags": ["owner", "environment", "project", "cost_center"]
+  }
+}

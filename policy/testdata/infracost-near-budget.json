@@ -1,0 +1,21 @@
+{
+  "totalMonthlyCost": "18.40",
+  "projects": [
+    {
+      "name": "terraform",
+      "breakdown": {
+        "totalMonthlyCost": "18.40",
+        "resources": [
+          {
+            "name": "module.compute.azurerm_linux_virtual_machine.vm",
+            "monthlyCost": "14.00"
+          },
+          {
+            "name": "module.compute.azurerm_public_ip.pip",
+            "monthlyCost": "3.65"
+          }
+        ]
+      }
+    }
+  ]
+}

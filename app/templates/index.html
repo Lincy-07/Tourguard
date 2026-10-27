@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TN Tourist Guide</title>
+  <style>
+    :root {
+      --ink: #1d2b36; --muted: #5d6b76; --bg: #f6f3ec; --card: #ffffff;
+      --teal: #0f766e; --teal-dark: #0b5a54; --sand: #e9dfca; --accent: #d97706;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); }
+    header.hero {
+      background: linear-gradient(135deg, #0f766e 0%, #155e75 55%, #1e3a5f 100%);
+      color: #fff; padding: 3rem 1.25rem 4.5rem; text-align: center; position: relative;
+    }
+    header.hero h1 { margin: 0 0 .4rem; font-size: clamp(1.8rem, 5vw, 2.8rem); letter-spacing: .3px; }
+    header.hero p { margin: 0 auto; max-width: 560px; opacity: .92; line-height: 1.5; }
+    .wrap { max-width: 1040px; margin: -2.6rem auto 2rem; padding: 0 1rem; }
+    .panel { background: var(--card); border-radius: 14px; padding: 1rem 1.1rem; box-shadow: 0 6px 22px rgba(0,0,0,.08); }
+    .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .4rem 0; }
+    .row label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); min-width: 64px; }
+    input[type=search] { flex: 1; min-width: 200px; padding: .65rem .8rem; border: 1px solid #cfd6dc; border-radius: 10px; font-size: 1rem; }
+    .chip { border: 1px solid #cfd6dc; background: #fff; border-radius: 999px; padding: .35rem .85rem; cursor: pointer; font-size: .9rem; color: var(--ink); }
+    .chip:hover { border-color: var(--teal); }
+    .chip.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .summary { display: flex; justify-content: space-between; align-items: center; margin: 1.2rem .2rem .6rem; color: var(--muted); font-size: .95rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; }
+    .card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.07); display: flex; flex-direction: column; }
+    .card .top { background: var(--sand); padding: 1.1rem; font-size: 2.4rem; display: flex; justify-content: space-between; align-items: flex-start; }
+    .fav { border: none; background: rgba(255,255,255,.8); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 1.1rem; }
+    .card .body { padding: .9rem 1rem 1.1rem; display: flex; flex-direction: column; gap: .35rem; flex: 1; }
+    .card h3 { margin: 0; font-size: 1.1rem; }
+    .place { color: var(--teal-dark); font-size: .9rem; font-weight: 600; }
+    .blurb { color: var(--muted); font-size: .92rem; line-height: 1.45; }
+    .tags { margin-top: auto; display: flex; flex-wrap: wrap; gap: .35rem; padding-top: .4rem; }
+    .tag { font-size: .75rem; padding: .15rem .55rem; border-radius: 999px; background: #eef4f3; color: var(--teal-dark); }
+    .tag.budget { background: #fdf1de; color: #8a4b05; }
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+    footer { text-align: center; color: var(--muted); font-size: .82rem; padding: 1.5rem 1rem 2.5rem; line-height: 1.6; }
+    footer code { background: #ece7da; padding: .1rem .4rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>Discover Tamil Nadu</h1>
+    <p>Temples, beaches, hill stations and waterfalls. Filter by interest, season and budget to plan your next trip.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="panel">
+      <div class="row"><input id="q" type="search" placeholder="Search a place, e.g. Madurai or waterfall"></div>
+      <div class="row"><label>Type</label><span id="cats"></span></div>
+      <div class="row"><label>Season</label><span id="seasons"></span></div>
+      <div class="row"><label>Budget</label><span id="budgets"></span></div>
+    </section>
+
+    <div class="summary">
+      <span id="count">Loading...</span>
+      <button class="chip" id="favOnly">♡ Saved only</button>
+    </div>
+    <section class="grid" id="grid"></section>
+  </main>
+
+  <footer>
+    Season guide is indicative. Check local conditions before travelling.<br>
+    Deployed with Terraform and Jenkins on Azure, cost-checked by Infracost and OPA.<br>
+    Build <code id="ver">...</code>
+  </footer>
+
+  <script>
+    const state = { category: '', season: '', budget: '', q: '', favOnly: false };
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('favs') || '[]'); } catch (e) { favs = []; }
+    const SEASON_LABEL = { winter: 'Winter (Nov-Feb)', summer: 'Summer (Mar-Jun)', monsoon: 'Monsoon (Jul-Oct)' };
+
+    function chips(el, key, values, labels) {
+      el.innerHTML = '';
+      [['', 'All'], ...values.map(v => [v, (labels && labels[v]) || v])].forEach(([val, text]) => {
+        const b = document.createElement('button');
+        b.className = 'chip' + (state[key] === val ? ' on' : '');
+        b.textContent = text;
+        b.onclick = () => { state[key] = val; load(); drawFilters(); };
+        el.appendChild(b);
+      });
+    }
+    let meta = null;
+    function drawFilters() {
+      chips(document.getElementById('cats'), 'category', Object.keys(meta.categories));
+      chips(document.getElementById('seasons'), 'season', meta.seasons, SEASON_LABEL);
+      chips(document.getElementById('budgets'), 'budget', meta.budgets);
+    }
+    function saveFavs() { try { localStorage.setItem('favs', JSON.stringify(favs)); } catch (e) {} }
+    function toggleFav(id) {
+      favs = favs.includes(id) ? favs.filter(x => x !== id) : [...favs, id];
+      saveFavs(); load();
+    }
+    async function load() {
+      const p = new URLSearchParams();
+      ['category', 'season', 'budget', 'q'].forEach(k => state[k] && p.set(k, state[k]));
+      const r = await fetch('/api/spots?' + p.toString());
+      const d = await r.json();
+      let list = d.spots || [];
+      if (state.favOnly) list = list.filter(s => favs.includes(s.id));
+      document.getElementById('count').textContent = list.length + (list.length === 1 ? ' place' : ' places') + ' found';
+      const grid = document.getElementById('grid');
+      if (!list.length) { grid.innerHTML = '<div class="empty">No places match. Try removing a filter.</div>'; return; }
+      grid.innerHTML = list.map(s => `
+        <article class="card">
+          <div class="top"><span>${s.emoji}</span>
+            <button class="fav" onclick="toggleFav(${s.id})" aria-label="Save ${s.name}">${favs.includes(s.id) ? '♥' : '♡'}</button></div>
+          <div class="body">
+            <h3>${s.name}</h3><div class="place">${s.place}</div>
+            <div class="blurb">${s.blurb}</div>
+            <div class="tags"><span class="tag">${s.category}</span>
+              ${s.seasons.map(x => `<span class="tag">${x}</span>`).join('')}
+              <span class="tag budget">${s.budget} budget</span></div>
+          </div>
+        </article>`).join('');
+    }
+    document.getElementById('q').addEventListener('input', e => { state.q = e.target.value; load(); });
+    document.getElementById('favOnly').onclick = e => {
+      state.favOnly = !state.favOnly; e.target.classList.toggle('on', state.favOnly); load();
+    };
+    (async () => {
+      meta = await (await fetch('/api/meta')).json();
+      drawFilters(); load();
+      try { const h = await (await fetch('/health')).json(); document.getElementById('ver').textContent = h.version + ' / ' + h.commit; } catch (e) {}
+    })();
+  </script>
+</body>
+</html>
